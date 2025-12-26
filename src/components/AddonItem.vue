@@ -1,40 +1,54 @@
 <template>
   <div class="item">
-    <div class="col-8">
-      <div class="details">
-        <div class="logo_container">
-          <img :src="logoURL || defaultLogo" />
+    <div class="item-left">
+      <div class="addon-content">
+        <div class="details">
+          <div class="logo_container">
+            <img :src="logoURL || defaultLogo" />
+          </div>
+          <div class="addon-info">
+            <span class="addon-name">{{ name }}</span>
+            <AddonFeatures :manifest="manifest" :showText="false" />
+          </div>
         </div>
-        <div class="addon-info">
-          <span class="addon-name">{{ name }}</span>
-          <AddonFeatures :manifest="manifest" :showText="false" />
+        <div class="actions-wrapper">
+          <div class="col">
+            <button class="button icon-only visit-url" title="Open addon configuration page in new window"
+              :disabled="!isConfigurable" 
+              @click="openAddonConfigurationPage" @mousedown.stop @touchstart.stop>
+              <img src="/icons/arrow-up-right-12-000000.svg">
+            </button>
+            <button class="button icon-only copy-url" title="Copy addon manifest URL to clipboard"
+              @click="copyManifestURLToClipboard" @mousedown.stop @touchstart.stop>
+              <img src="/icons/clipboard-12-000000.svg">
+            </button>
+            <button class="button icon-only edit-addon" title="Edit addon" 
+              @click="openEditManifestModal" @mousedown.stop @touchstart.stop>
+              <img src="/icons/edit-12-000000.svg">
+            </button>
+            <button class="button icon-only delete" title="Remove addon from list" 
+              :disabled="!isDeletable"
+              @click="removeAddon" @mousedown.stop @touchstart.stop>
+              <img src="/icons/trash-2-12-000000.svg">
+            </button>
+          </div>
         </div>
       </div>
     </div>
-    <div class="actions-wrapper">
-      <div class="col">
-        <button class="button icon-only visit-url" title="Open addon configuration page in new window"
-          :disabled="!isConfigurable" 
-          @click="openAddonConfigurationPage" @mousedown.stop @touchstart.stop>
-          <img src="/icons/arrow-up-right-12-000000.svg">
-        </button>
-        <button class="button icon-only copy-url" title="Copy addon manifest URL to clipboard"
-          @click="copyManifestURLToClipboard" @mousedown.stop @touchstart.stop>
-          <img src="/icons/clipboard-12-000000.svg">
-        </button>
-        <button class="button icon-only edit-addon" title="Edit addon" 
-          @click="openEditManifestModal" @mousedown.stop @touchstart.stop>
-          <img src="/icons/edit-12-000000.svg">
-        </button>
-        <button class="button icon-only delete" title="Remove addon from list" 
-          :disabled="!isDeletable"
-          @click="removeAddon" @mousedown.stop @touchstart.stop>
-          <img src="/icons/trash-2-12-000000.svg">
-        </button>
-      </div>
-      <span class="drag-handle" aria-label="Reorder addon">
-        <img src="/icons/move-32-000000.svg" alt="" aria-hidden="true" />
-      </span>
+    <div class="item-right">
+      <span class="priority-display">{{ priorityNumber }}</span>
+      <input 
+        type="number" 
+        class="priority-input-right"
+        :value="priorityNumber"
+        min="1"
+        :max="totalAddons"
+        title="Enter new position (1 = highest priority)"
+        @keydown.enter="handlePriorityChange($event)"
+        @blur="handlePriorityChange($event)"
+        @mousedown.stop
+        @touchstart.stop
+      />
     </div>
   </div>
 </template>
@@ -74,16 +88,42 @@
       type: Object,
       required: false,
       default: () => ({})
+    },
+    priorityNumber: {
+      type: Number,
+      required: true
+    },
+    totalAddons: {
+      type: Number,
+      required: true
     }
   })
   
-  const emits = defineEmits(['delete-addon', 'edit-addon', 'show-toast'])
+  const emits = defineEmits(['delete-addon', 'edit-addon', 'show-toast', 'change-priority'])
   
   const defaultLogo = '/icons/box-48-ffffff.svg'
   
+  function handlePriorityChange(event) {
+    const input = event.target
+    const newValue = parseInt(input.value, 10)
+    
+    if (isNaN(newValue)) {
+      input.value = props.priorityNumber
+      return
+    }
+    
+    const clampedValue = Math.max(1, Math.min(newValue, props.totalAddons))
+    
+    if (clampedValue === props.priorityNumber) {
+      input.value = props.priorityNumber
+      return
+    }
+    
+    emits('change-priority', props.idx, clampedValue)
+  }
+  
   async function copyManifestURLToClipboard() {
     try {
-      // Modern clipboard API - works on most browsers including mobile
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(props.manifestURL)
         emits('show-toast', {
@@ -91,7 +131,6 @@
           duration: 3000,
         })
       } else {
-        // Fallback for older browsers/mobile
         const textArea = document.createElement('textarea')
         textArea.value = props.manifestURL
         textArea.style.position = 'fixed'
@@ -137,18 +176,15 @@
   }
   
   function removeAddon() {
-    // Prepare toast notification before emitting delete
     const addonName = props.name.length > 30 
       ? props.name.substring(0, 27) + '...' 
       : props.name
     
-    // Emit to parent to show toast (since this component will be destroyed)
     emits('show-toast', {
       message: `"${addonName}" removed. Sync to Stremio to apply changes.`,
       duration: 4000,
     })
     
-    // Then emit the delete event
     emits('delete-addon', props.idx)
   }
   
@@ -158,37 +194,97 @@
 </script>
 
 <style scoped>
-.sortable-list .item {
+.item {
   list-style: none;
   display: flex;
-  cursor: default;
-  align-items: center;
-  border-radius: 5px;
-  padding: 5px 8px;
-  margin-bottom: 8px;
-  border: 1px solid #ccc;
+  flex-direction: row;
   justify-content: space-between;
-  flex-wrap: wrap;
-  position: relative; /* Needed for absolute positioning of drag handle on mobile */
-  flex-direction: row; /* Keep horizontal layout on desktop */
+  align-items: stretch;
+  cursor: default;
+  border-radius: 5px;
+  padding: 10px 13px;
+  margin-bottom: 11px;
+  border: 1px solid #ccc;
+  position: relative;
 }
 
-@media (max-width: 768px) {
-  .sortable-list .item {
-    flex-direction: column; /* Stack vertically on mobile */
-    align-items: flex-start; /* Left align everything */
-    padding: 10px;
-  }
-}
-
-.dark .sortable-list .item {
+.dark .item {
   border: 1px solid #434242;
+}
+
+.item-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-left: 20px;
+  min-width: 80px;
+}
+
+.priority-display {
+  font-size: 36px;
+  font-weight: 700;
+  color: #2c5f8d;
+  line-height: 1;
+}
+
+.dark .priority-display {
+  color: #5a9fd4;
+}
+
+.priority-input-right {
+  width: 60px;
+  padding: 6px 10px;
+  font-size: 16px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #333;
+  -moz-appearance: textfield;
+}
+
+.priority-input-right::-webkit-outer-spin-button,
+.priority-input-right::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.priority-input-right:focus {
+  outline: none;
+  border-color: #2c5f8d;
+  box-shadow: 0 0 0 2px rgba(44, 95, 141, 0.2);
+}
+
+.dark .priority-input-right {
+  background-color: #333;
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+.dark .priority-input-right:focus {
+  border-color: #5a9fd4;
+  box-shadow: 0 0 0 2px rgba(90, 159, 212, 0.2);
+}
+
+.addon-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .item .details {
   display: flex;
   align-items: center;
   flex: 1;
+  margin-bottom: 10px;
 }
 
 .addon-info {
@@ -203,10 +299,10 @@
 }
 
 .item .details img {
-  height: 40px;
-  width: 40px;
+  height: 60px;
+  width: 60px;
   pointer-events: none;
-  margin-right: 10px;
+  margin-right: 12px;
   object-fit: contain;
   object-position: center;
   border-radius: 30%;
@@ -215,20 +311,20 @@
 
 .col {
   display: flex;
-  gap: 6px; /* Consistent gap at all sizes */
-  flex-wrap: nowrap; /* Never wrap the buttons */
+  gap: 6px;
+  flex-wrap: nowrap;
   align-items: center;
   min-width: auto;
-  flex-shrink: 1; /* Allow buttons to shrink if needed */
+  flex-shrink: 1;
 }
 
 .actions-wrapper {
   display: flex;
   align-items: center;
-  gap: 0; /* No gap needed, drag-handle has its own margin */
-  flex-shrink: 0; /* Prevent shrinking on mobile */
+  gap: 0;
+  flex-shrink: 0;
   width: 100%;
-  justify-content: space-between; /* Push buttons left, drag handle right */
+  justify-content: flex-start;
 }
 
 .button {
@@ -287,142 +383,73 @@
 .edit-addon img {
   width: 20px;
   height: 20px;
-  filter: brightness(0); /* Make icons black */
-  pointer-events: none; /* Prevent images from intercepting click events */
+  filter: brightness(0);
+  pointer-events: none;
 }
 
 .delete img {
   width: 20px;
   height: 20px;
-  filter: brightness(0) saturate(100%) invert(25%) sepia(85%) saturate(3500%) hue-rotate(345deg); /* Red color for delete */
-  pointer-events: none; /* Prevent images from intercepting click events */
+  filter: brightness(0) saturate(100%) invert(25%) sepia(85%) saturate(3500%) hue-rotate(345deg);
+  pointer-events: none;
 }
 
 .dark .visit-url img,
 .dark .copy-url img,
 .dark .edit-addon img {
-  filter: brightness(0); /* Keep icons black even in dark mode */
+  filter: brightness(0);
 }
 
 .dark .delete img {
-  filter: brightness(0) saturate(100%) invert(35%) sepia(85%) saturate(4000%) hue-rotate(345deg); /* Brighter red for dark mode */
-}
-
-.drag-handle {
-  cursor: move;
-  touch-action: none; /* Disable scrolling when touching drag handle */
-  user-select: none;
-  -webkit-user-select: none;
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  margin-left: 12px;
-}
-
-.drag-handle img {
-  width: 32px;
-  height: 32px;
-  filter: brightness(0); /* Make icon black */
-  pointer-events: none;
-}
-
-.dark .drag-handle img {
-  filter: brightness(0) invert(1); /* Make icon white in dark mode */
-}
-
-.drag-handle:hover {
-  opacity: 0.7;
+  filter: brightness(0) saturate(100%) invert(35%) sepia(85%) saturate(4000%) hue-rotate(345deg);
 }
 
 @media (max-width: 768px) {
-  .sortable-list .item {
-    flex-direction: column;
-    align-items: flex-start; /* Left align everything */
-    padding: 10px;
-  }
-
-  .item .details {
-    margin-bottom: 10px;
-    align-self: flex-start; /* Force left alignment */
-  }
-
   .item .details img {
     margin-right: 12px;
     margin-bottom: 8px;
   }
 
-  .actions-wrapper {
-    width: 100%;
-    justify-content: space-between; /* Push buttons left, drag handle right */
-    margin-top: 10px;
-    flex-wrap: nowrap; /* Never wrap */
-  }
-
   .col {
     flex-direction: row;
-    gap: 6px; /* Reduce gap to fit more on one line */
+    gap: 6px;
     justify-content: flex-start;
     min-width: auto;
-    flex-wrap: nowrap; /* Never wrap the buttons */
-    flex-shrink: 1; /* Allow buttons to shrink if needed */
+    flex-wrap: nowrap;
+    flex-shrink: 1;
   }
 
   .button {
     padding: 6px;
-    min-width: 32px; /* Ensure buttons don't get too small */
-    flex-shrink: 0; /* Don't let individual buttons shrink */
-  }
-
-  .drag-handle {
-    margin-left: 8px; /* Reduce margin to save space */
-    padding: 6px; /* Reduce padding to save space */
-    flex-shrink: 0; /* Never shrink the drag handle */
-  }
-
-  .drag-handle img {
-    width: 32px; /* Keep large on mobile for easy touch */
-    height: 32px;
+    min-width: 32px;
+    flex-shrink: 0;
   }
 }
 
 @media (max-width: 480px) {
   .item .details {
-    flex-direction: row; /* Keep horizontal on small screens */
+    flex-direction: row;
     align-items: center;
   }
 
   .item .details img {
-    margin-bottom: 0; /* Remove bottom margin */
-    margin-right: 12px; /* Keep right margin */
-  }
-
-  .actions-wrapper {
-    justify-content: space-between; /* Keep buttons left, drag handle right */
+    margin-bottom: 0;
+    margin-right: 12px;
   }
 
   .col {
-    gap: 3px; /* Minimal gap for very small screens */
-    flex-wrap: nowrap; /* Never wrap */
+    gap: 3px;
+    flex-wrap: nowrap;
   }
 
   .button {
-    padding: 4px; /* Smaller padding on very small screens */
-    min-width: 28px; /* Slightly smaller minimum on tiny screens */
+    padding: 4px;
+    min-width: 28px;
   }
 
   .button img {
-    width: 16px; /* Slightly smaller icons on very small screens */
+    width: 16px;
     height: 16px;
-  }
-
-  .drag-handle {
-    margin-left: 4px; /* Minimal margin */
-    padding: 4px;
-  }
-
-  .drag-handle img {
-    width: 28px; /* Slightly smaller on very small screens but still usable */
-    height: 28px;
   }
 }
 </style>

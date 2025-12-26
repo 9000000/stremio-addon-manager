@@ -3,38 +3,38 @@ node_modules
 
 # Build output
 dist
-dist-ssr
 
-# Development files
-.devenv*
-devenv.local.nix
-.direnv
+# Git
 .git
-.github
+.gitignore
+
+# IDE
 .vscode
 .idea
+*.swp
+*.swo
+
+# Kiro specs
 .kiro
 
+# Development files
+.envrc
+devenv.lock
+devenv.nix
+devenv.yaml
+*.md
+!README.md
+
 # Logs
-logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
-
-# Test files
-coverage
-*.test.js
-*.spec.js
 
 # OS files
 .DS_Store
-*.local
+Thumbs.db
 
-# Editor files
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-*.tsbuildinfo
+# Test files
+*.test.js
+*.spec.js
+__tests__
+coverage

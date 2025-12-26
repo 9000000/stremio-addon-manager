@@ -57,20 +57,25 @@
                         {{ isAddonListCollapsed ? 'Show' : 'Hide' }} Addons
                         <i :class="isAddonListCollapsed ? 'bi bi-chevron-down' : 'bi bi-chevron-up'"></i>
                     </button>
-                    <draggable v-show="!isAddonListCollapsed" :list="addons" item-key="transportUrl" class="sortable-list" ghost-class="ghost"
-                        handle=".drag-handle"
-                        @start="dragging = true" @end="handleDragEnd">
-                        <template #item="{ element, index }">
-                            <AddonItem :name="element.manifest.name" :idx="index" :manifestURL="element.transportUrl"
-                                :logoURL="element.manifest.logo"
-                                :manifest="element.manifest"
-                                :isDeletable="!getNestedObjectProperty(element, 'flags.protected', false)"
-                                :isConfigurable="getNestedObjectProperty(element, 'manifest.behaviorHints.configurable', false)"
-                                @delete-addon="removeAddon"
-                                @edit-addon="openEditAddon"
-                                @show-toast="handleToast" />
-                        </template>
-                    </draggable>
+                    <div v-show="!isAddonListCollapsed" class="addon-list">
+                        <AddonItem 
+                            v-for="(element, index) in addons" 
+                            :key="element.transportUrl"
+                            :name="element.manifest.name" 
+                            :idx="index" 
+                            :manifestURL="element.transportUrl"
+                            :logoURL="element.manifest.logo"
+                            :manifest="element.manifest"
+                            :priorityNumber="index + 1"
+                            :totalAddons="addons.length"
+                            :isDeletable="!getNestedObjectProperty(element, 'flags.protected', false)"
+                            :isConfigurable="getNestedObjectProperty(element, 'manifest.behaviorHints.configurable', false)"
+                            @delete-addon="removeAddon"
+                            @edit-addon="openEditAddon"
+                            @show-toast="handleToast"
+                            @change-priority="moveAddonToPosition" 
+                        />
+                    </div>
                 </div>
                 <p v-else-if="stremioAuthKey" class="empty-state">No addons loaded! Load addons or restore a configuration above to start editing them.</p>
             </fieldset>
@@ -166,7 +171,6 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
-import draggable from 'vuedraggable'
 import AddonItem from './AddonItem.vue'
 import Authentication from './Authentication.vue'
 import DynamicForm from './DynamicForm.vue'
@@ -174,7 +178,6 @@ import Toast from './Toast.vue'
 import { useDialog } from './DialogHost.vue'
 
 const stremioAPIBase = "https://api.strem.io/api/"
-const dragging = false
 let stremioAuthKey = ref('');
 let addons = ref([])
 let isLoadingAddons = ref(false)
@@ -706,7 +709,15 @@ function clearAddons() {
     resetAddons();
 }
 
-function handleDragEnd() {
+function moveAddonToPosition(currentIndex, newPosition) {
+    const validPosition = Math.max(1, Math.min(newPosition, addons.value.length))
+    const targetIndex = validPosition - 1
+    
+    if (currentIndex === targetIndex) return
+    
+    const [addon] = addons.value.splice(currentIndex, 1)
+    addons.value.splice(targetIndex, 0, addon)
+    
     checkIfModified()
 }
 
@@ -973,22 +984,16 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.sortable-list {
+.addon-list {
     padding: 25px;
     border-radius: 7px;
     padding: 30px 25px 20px;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-    touch-action: pan-y; /* Allow vertical scrolling but prevent horizontal scrolling during drag */
 }
 
 .item {
-    touch-action: manipulation; /* Prevent double-tap zoom, allow single taps */
+    touch-action: manipulation;
 }
-.item.dragging { 
-    opacity: 0.6;
-    touch-action: none; /* Disable all touch scrolling when actively dragging */
-}
-.item.dragging :where(.details, i) { opacity: 0; }
 
 .action-row {
     display: flex;
