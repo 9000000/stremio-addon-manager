@@ -162,7 +162,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineEmits, onMounted, nextTick, computed } from 'vue'
+import { ref, watch, onMounted, nextTick, computed } from 'vue'
 import Draggable from 'vuedraggable'
 import { useDialog } from './DialogHost.vue'
 import Toast from './Toast.vue'
