@@ -1,14 +1,21 @@
 # Dependencies
 node_modules
+.pnp
+.pnp.js
 
 # Build output
 dist
+dist-ssr
+
+# Mobile projects (Capacitor)
+android
+ios
 
 # Git
 .git
 .gitignore
 
-# IDE
+# IDE / Editor
 .vscode
 .idea
 *.swp
@@ -17,24 +24,33 @@ dist
 # Kiro specs
 .kiro
 
-# Development files
+# Development / OS files
+.env
+.env.local
+.env.*.local
 .envrc
 devenv.lock
 devenv.nix
 devenv.yaml
+.DS_Store
+Thumbs.db
+
+# Documentation / AI Agents
 *.md
 !README.md
 
 # Logs
 *.log
 npm-debug.log*
-
-# OS files
-.DS_Store
-Thumbs.db
+yarn-debug.log*
+yarn-error.log*
 
 # Test files
 *.test.js
 *.spec.js
 __tests__
 coverage
+
+# Docker
+Dockerfile
+.dockerignore
