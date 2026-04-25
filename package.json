@@ -1,6 +1,6 @@
 {
   "name": "stremio-addon-manager",
-  "version": "0.0.26",
+  "version": "0.0.32",
   "productName": "StremioAddonManager",
   "private": true,
   "type": "module",
