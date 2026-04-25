@@ -32,6 +32,9 @@
               <img src="/icons/trash-2-12-000000.svg">
             </button>
           </div>
+          <span class="drag-handle" aria-label="Reorder addon">
+            <img src="/icons/move-32-000000.svg" alt="" aria-hidden="true" />
+          </span>
         </div>
       </div>
     </div>
@@ -124,6 +127,7 @@
   
   async function copyManifestURLToClipboard() {
     try {
+      // Modern clipboard API - works on most browsers including mobile
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(props.manifestURL)
         emits('show-toast', {
@@ -131,6 +135,7 @@
           duration: 3000,
         })
       } else {
+        // Fallback for older browsers/mobile
         const textArea = document.createElement('textarea')
         textArea.value = props.manifestURL
         textArea.style.position = 'fixed'
@@ -176,15 +181,18 @@
   }
   
   function removeAddon() {
+    // Prepare toast notification before emitting delete
     const addonName = props.name.length > 30 
       ? props.name.substring(0, 27) + '...' 
       : props.name
     
+    // Emit to parent to show toast (since this component will be destroyed)
     emits('show-toast', {
       message: `"${addonName}" removed. Sync to Stremio to apply changes.`,
       duration: 4000,
     })
     
+    // Then emit the delete event
     emits('delete-addon', props.idx)
   }
   
@@ -197,15 +205,24 @@
 .item {
   list-style: none;
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: stretch;
   cursor: default;
+  align-items: center;
   border-radius: 5px;
   padding: 10px 13px;
   margin-bottom: 11px;
   border: 1px solid #ccc;
-  position: relative;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  position: relative; /* Needed for absolute positioning of drag handle on mobile */
+  flex-direction: row; /* Keep horizontal layout on desktop */
+}
+
+@media (max-width: 768px) {
+  .sortable-list .item {
+    flex-direction: column; /* Stack vertically on mobile */
+    align-items: flex-start; /* Left align everything */
+    padding: 10px;
+  }
 }
 
 .dark .item {
@@ -311,20 +328,20 @@
 
 .col {
   display: flex;
-  gap: 6px;
-  flex-wrap: nowrap;
+  gap: 6px; /* Consistent gap at all sizes */
+  flex-wrap: nowrap; /* Never wrap the buttons */
   align-items: center;
   min-width: auto;
-  flex-shrink: 1;
+  flex-shrink: 1; /* Allow buttons to shrink if needed */
 }
 
 .actions-wrapper {
   display: flex;
   align-items: center;
-  gap: 0;
-  flex-shrink: 0;
+  gap: 0; /* No gap needed, drag-handle has its own margin */
+  flex-shrink: 0; /* Prevent shrinking on mobile */
   width: 100%;
-  justify-content: flex-start;
+  justify-content: space-between; /* Push buttons left, drag handle right */
 }
 
 .button {
@@ -383,73 +400,143 @@
 .edit-addon img {
   width: 20px;
   height: 20px;
-  filter: brightness(0);
-  pointer-events: none;
+  filter: brightness(0); /* Make icons black */
+  pointer-events: none; /* Prevent images from intercepting click events */
 }
 
 .delete img {
   width: 20px;
   height: 20px;
-  filter: brightness(0) saturate(100%) invert(25%) sepia(85%) saturate(3500%) hue-rotate(345deg);
-  pointer-events: none;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(85%) saturate(3500%) hue-rotate(345deg); /* Red color for delete */
+  pointer-events: none; /* Prevent images from intercepting click events */
 }
 
 .dark .visit-url img,
 .dark .copy-url img,
 .dark .edit-addon img {
-  filter: brightness(0);
+  filter: brightness(0); /* Keep icons black even in dark mode */
 }
 
 .dark .delete img {
-  filter: brightness(0) saturate(100%) invert(35%) sepia(85%) saturate(4000%) hue-rotate(345deg);
+  filter: brightness(0) saturate(100%) invert(35%) sepia(85%) saturate(4000%) hue-rotate(345deg); /* Brighter red for dark mode */
+}
+
+.drag-handle {
+  cursor: move;
+  touch-action: none; /* Disable scrolling when touching drag handle */
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  margin-left: 12px;
+}
+
+.drag-handle img {
+  width: 32px;
+  height: 32px;
+  filter: brightness(0); /* Make icon black */
+  pointer-events: none;
+}
+
+.dark .drag-handle img {
+  filter: brightness(0) invert(1); /* Make icon white in dark mode */
+}
+
+.drag-handle:hover {
+  opacity: 0.7;
 }
 
 @media (max-width: 768px) {
+  .sortable-list .item {
+    flex-direction: column;
+    align-items: flex-start; /* Left align everything */
+    padding: 10px;
+  }
+
+  .item .details {
+    margin-bottom: 10px;
+    align-self: flex-start; /* Force left alignment */
+  }
+
   .item .details img {
     margin-right: 12px;
     margin-bottom: 8px;
   }
 
+  .actions-wrapper {
+    width: 100%;
+    justify-content: space-between; /* Push buttons left, drag handle right */
+    margin-top: 10px;
+    flex-wrap: nowrap; /* Never wrap */
+  }
+
   .col {
     flex-direction: row;
-    gap: 6px;
+    gap: 6px; /* Reduce gap to fit more on one line */
     justify-content: flex-start;
     min-width: auto;
-    flex-wrap: nowrap;
-    flex-shrink: 1;
+    flex-wrap: nowrap; /* Never wrap the buttons */
+    flex-shrink: 1; /* Allow buttons to shrink if needed */
   }
 
   .button {
     padding: 6px;
-    min-width: 32px;
-    flex-shrink: 0;
+    min-width: 32px; /* Ensure buttons don't get too small */
+    flex-shrink: 0; /* Don't let individual buttons shrink */
+  }
+
+  .drag-handle {
+    margin-left: 8px; /* Reduce margin to save space */
+    padding: 6px; /* Reduce padding to save space */
+    flex-shrink: 0; /* Never shrink the drag handle */
+  }
+
+  .drag-handle img {
+    width: 32px; /* Keep large on mobile for easy touch */
+    height: 32px;
   }
 }
 
 @media (max-width: 480px) {
   .item .details {
-    flex-direction: row;
+    flex-direction: row; /* Keep horizontal on small screens */
     align-items: center;
   }
 
   .item .details img {
-    margin-bottom: 0;
-    margin-right: 12px;
+    margin-bottom: 0; /* Remove bottom margin */
+    margin-right: 12px; /* Keep right margin */
+  }
+
+  .actions-wrapper {
+    justify-content: space-between; /* Keep buttons left, drag handle right */
   }
 
   .col {
-    gap: 3px;
-    flex-wrap: nowrap;
+    gap: 3px; /* Minimal gap for very small screens */
+    flex-wrap: nowrap; /* Never wrap */
   }
 
   .button {
+    padding: 4px; /* Smaller padding on very small screens */
+    min-width: 28px; /* Slightly smaller minimum on tiny screens */
+  }
+
+  .button img {
+    width: 16px; /* Slightly smaller icons on very small screens */
+    height: 16px;
+  }
+
+  .drag-handle {
+    margin-left: 4px; /* Minimal margin */
     padding: 4px;
     min-width: 28px;
   }
 
-  .button img {
-    width: 16px;
-    height: 16px;
+  .drag-handle img {
+    width: 28px; /* Slightly smaller on very small screens but still usable */
+    height: 28px;
   }
 }
 </style>

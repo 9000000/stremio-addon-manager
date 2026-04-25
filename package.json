@@ -1,11 +1,16 @@
 {
   "name": "stremio-addon-manager",
-  "version": "0.0.0",
+  "version": "0.0.26",
+  "productName": "StremioAddonManager",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:android": "npm run build && node node_modules/@capacitor/cli/bin/capacitor sync android",
+    "open:android": "node node_modules/@capacitor/cli/bin/capacitor open android",
+    "linux:android-debug": "node scripts/linux-android-debug.mjs",
+    "deploy:android": "node scripts/deploy-android.cross-platform.mjs",
     "preview": "vite preview",
     "test": "vitest --run"
   },
@@ -16,11 +21,14 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
     "@vitejs/plugin-vue": "^5.0.3",
     "@vue/test-utils": "^2.4.6",
     "fast-check": "^4.3.0",
     "jsdom": "^27.2.0",
-    "vite": "^5.0.11",
+    "vite": "^5.4.21",
     "vitest": "^4.0.14"
   }
 }
