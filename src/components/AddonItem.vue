@@ -348,11 +348,11 @@
 
 .col {
   display: flex;
-  gap: 6px; /* Consistent gap at all sizes */
-  flex-wrap: nowrap; /* Never wrap the buttons */
+  gap: 8px 6px; /* row-gap 8px, column-gap 6px */
+  flex-wrap: wrap; /* Allow buttons to wrap to next line if needed */
   align-items: center;
   min-width: auto;
-  flex-shrink: 1; /* Allow buttons to shrink if needed */
+  flex-shrink: 1;
 }
 
 .actions-wrapper {
@@ -579,16 +579,17 @@ input:checked + .addon-toggle-slider .switch-icon {
     width: 100%;
     justify-content: space-between; /* Push buttons left, drag handle right */
     margin-top: 10px;
-    flex-wrap: nowrap; /* Never wrap */
+    flex-wrap: wrap; /* Allow wrapping of the whole row if needed */
+    row-gap: 10px;
   }
 
   .col {
     flex-direction: row;
-    gap: 6px; /* Reduce gap to fit more on one line */
+    gap: 8px 6px;
     justify-content: flex-start;
     min-width: auto;
-    flex-wrap: nowrap; /* Never wrap the buttons */
-    flex-shrink: 1; /* Allow buttons to shrink if needed */
+    flex-wrap: wrap; /* Allow wrapping on mobile */
+    flex-shrink: 1;
   }
 
   .button {
