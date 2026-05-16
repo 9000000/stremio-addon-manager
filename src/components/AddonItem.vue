@@ -26,6 +26,14 @@
               @click="openEditManifestModal" @mousedown.stop @touchstart.stop>
               <img src="/icons/edit-12-000000.svg">
             </button>
+            <div class="addon-toggle-container">
+              <label class="addon-toggle-switch" :title="isAddonVisible ? 'Visible on Home screen (Click to hide)' : 'Hidden from Home screen (Click to show)'">
+                <input type="checkbox" :checked="isAddonVisible" @change="toggleVisibility">
+                <span class="addon-toggle-slider">
+                  <img src="/icons/home-24-000000.svg" class="switch-icon">
+                </span>
+              </label>
+            </div>
             <button class="button icon-only delete" title="Remove addon from list" 
               :disabled="!isDeletable"
               @click="removeAddon" @mousedown.stop @touchstart.stop>
@@ -57,7 +65,7 @@
 </template>
 
 <script setup>
-  import { ref } from 'vue'
+  import { ref, computed } from 'vue'
   import AddonFeatures from './AddonFeatures.vue'
 
   const props = defineProps({
@@ -102,9 +110,21 @@
     }
   })
   
-  const emits = defineEmits(['delete-addon', 'edit-addon', 'show-toast', 'change-priority'])
+  const emits = defineEmits(['delete-addon', 'edit-addon', 'show-toast', 'change-priority', 'toggle-addon-visibility'])
   
   const defaultLogo = '/icons/box-48-ffffff.svg'
+
+  const isAddonVisible = computed(() => {
+    if (!props.manifest.catalogs || props.manifest.catalogs.length === 0) return true;
+    return props.manifest.catalogs.some(catalog => {
+      if (!Array.isArray(catalog.extra)) return true;
+      return !catalog.extra.some(e => e && e.isRequired === true);
+    });
+  })
+
+  function toggleVisibility() {
+    emits('toggle-addon-visibility', props.idx)
+  }
   
   function handlePriorityChange(event) {
     const input = event.target
@@ -402,6 +422,97 @@
   height: 20px;
   filter: brightness(0); /* Make icons black */
   pointer-events: none; /* Prevent images from intercepting click events */
+}
+
+/* Modern Toggle Switch Styling */
+.addon-toggle-container {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.addon-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+  margin: 0;
+}
+
+.addon-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.addon-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #dc3545; /* Hidden state (Red) */
+  transition: .3s;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.addon-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .addon-toggle-slider {
+  background-color: #28a745; /* Visible state (Green) */
+}
+
+input:focus + .addon-toggle-slider {
+  box-shadow: 0 0 1px #28a745;
+}
+
+input:checked + .addon-toggle-slider:before {
+  transform: translateX(22px);
+}
+
+.switch-icon {
+  width: 12px !important;
+  height: 12px !important;
+  position: absolute;
+  z-index: 3;
+  transition: .3s;
+  pointer-events: none;
+  filter: brightness(0) saturate(100%) invert(48%) sepia(13%) saturate(3207%) hue-rotate(314deg) brightness(95%) contrast(112%); /* Initial red-ish icon color */
+}
+
+/* Position icon inside the slider circle */
+input:not(:checked) + .addon-toggle-slider .switch-icon {
+  left: 6px;
+  filter: grayscale(1) brightness(0.5);
+}
+
+input:checked + .addon-toggle-slider .switch-icon {
+  left: 28px;
+  filter: brightness(0) saturate(100%) invert(45%) sepia(93%) saturate(1418%) hue-rotate(88deg) brightness(101%) contrast(106%); /* Green-ish icon */
+}
+
+.dark .addon-toggle-slider {
+  background-color: #555;
+}
+
+.dark input:checked + .addon-toggle-slider {
+  background-color: #218838;
 }
 
 .delete img {

@@ -58,27 +58,28 @@
                         <i :class="isAddonListCollapsed ? 'bi bi-chevron-down' : 'bi bi-chevron-up'"></i>
                     </button>
                     <div v-show="!isAddonListCollapsed" class="addon-list">
-                        <draggable :list="addons" item-key="transportUrl" class="sortable-list" ghost-class="ghost"
+                        <VueDraggable v-model="addons" class="sortable-list" ghost-class="ghost"
                             handle=".drag-handle"
                             @start="dragging = true" @end="handleDragEnd">
-                            <template #item="{ element, index }">
-                                <AddonItem 
-                                    :name="element.manifest.name" 
-                                    :idx="index" 
-                                    :manifestURL="element.transportUrl"
-                                    :logoURL="element.manifest.logo"
-                                    :manifest="element.manifest"
-                                    :priorityNumber="index + 1"
-                                    :totalAddons="addons.length"
-                                    :isDeletable="!getNestedObjectProperty(element, 'flags.protected', false)"
-                                    :isConfigurable="getNestedObjectProperty(element, 'manifest.behaviorHints.configurable', false)"
-                                    @delete-addon="removeAddon"
-                                    @edit-addon="openEditAddon"
-                                    @show-toast="handleToast"
-                                    @change-priority="moveAddonToPosition" 
-                                />
-                            </template>
-                        </draggable>
+                            <AddonItem 
+                                v-for="(element, index) in addons"
+                                :key="element.transportUrl"
+                                :name="element.manifest.name" 
+                                :idx="index" 
+                                :manifestURL="element.transportUrl"
+                                :logoURL="element.manifest.logo"
+                                :manifest="element.manifest"
+                                :priorityNumber="index + 1"
+                                :totalAddons="addons.length"
+                                :isDeletable="!getNestedObjectProperty(element, 'flags.protected', false)"
+                                :isConfigurable="getNestedObjectProperty(element, 'manifest.behaviorHints.configurable', false)"
+                                @delete-addon="removeAddon"
+                                @edit-addon="openEditAddon"
+                                @show-toast="handleToast"
+                                @change-priority="moveAddonToPosition" 
+                                @toggle-addon-visibility="toggleAddonVisibility"
+                            />
+                        </VueDraggable>
                     </div>
                 </div>
                 <p v-else-if="stremioAuthKey" class="empty-state">No addons loaded! Load addons or restore a configuration above to start editing them.</p>
@@ -175,7 +176,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
-import draggable from 'vuedraggable'
+import { VueDraggable } from 'vue-draggable-plus'
 import AddonItem from './AddonItem.vue'
 import Authentication from './Authentication.vue'
 import DynamicForm from './DynamicForm.vue'
@@ -730,6 +731,69 @@ function moveAddonToPosition(currentIndex, newPosition) {
 function handleDragEnd() {
     dragging.value = false
     checkIfModified()
+}
+
+function toggleAddonVisibility(index) {
+    const addon = addons.value[index];
+    if (!addon || !addon.manifest || !addon.manifest.catalogs) return;
+    
+    // Determine current state: visible if at least one catalog is visible
+    const isCurrentlyVisible = addon.manifest.catalogs.some(catalog => {
+        if (!Array.isArray(catalog.extra)) return true;
+        return !catalog.extra.some(e => e && e.isRequired === true);
+    });
+    
+    if (isCurrentlyVisible) {
+        // Hide all catalogs
+        addon.manifest.catalogs.forEach(catalog => {
+            if (!Array.isArray(catalog.extra)) {
+                catalog.extra = [];
+            }
+            
+            // Check if it's a system extra that shouldn't be touched
+            const systemExtras = ['lastVideosIds', 'calendarVideosIds'];
+            const hasSystem = catalog.extra.some(e => e && typeof e === 'object' && systemExtras.includes(e.name));
+            if (hasSystem) return;
+
+            // Use logic similar to DynamicForm
+            let targetExtra = catalog.extra.find(e => e && e.name === 'search') || 
+                              catalog.extra.find(e => e && e.name === 'genre') || 
+                              catalog.extra[0];
+            
+            if (targetExtra) {
+                targetExtra.isRequired = true;
+            } else {
+                catalog.extra.push({
+                    name: 'genre',
+                    isRequired: true,
+                    options: [],
+                    optionsLimit: 1
+                });
+            }
+        });
+    } else {
+        // Show all catalogs
+        addon.manifest.catalogs.forEach(catalog => {
+            if (Array.isArray(catalog.extra)) {
+                catalog.extra.forEach(extra => {
+                    if (extra && typeof extra === 'object') {
+                        delete extra.isRequired;
+                    }
+                });
+            }
+        });
+    }
+    
+    checkIfModified();
+    
+    const addonName = addon.manifest.name.length > 30 
+      ? addon.manifest.name.substring(0, 27) + '...' 
+      : addon.manifest.name
+      
+    handleToast({
+      message: `${isCurrentlyVisible ? 'Hidden' : 'Shown'} all catalogs for "${addonName}". Sync to apply.`,
+      duration: 3000
+    })
 }
 
 async function installAddon() {

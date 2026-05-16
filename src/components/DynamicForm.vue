@@ -52,59 +52,61 @@
                     </div>
         
                     <div v-if="formModel.catalogs && formModel.catalogs.length > 0" class="form-group">
-                        <label>Catalogs</label>
-                        <Draggable
+                        <div class="catalogs-header">
+                            <label>Catalogs</label>
+                            <div class="catalogs-bulk-actions">
+                                <button type="button" class="bulk-action-button" @click="showAllCatalogs" title="Make all catalogs visible on Home screen">Show All</button>
+                                <button type="button" class="bulk-action-button" @click="hideAllCatalogs" title="Hide all catalogs from Home screen">Hide All</button>
+                            </div>
+                        </div>
+                        <VueDraggable
                             v-model="formModel.catalogs"
-                            item-key="__dragKey"
                             class="catalog-list"
                             ghost-class="catalog-ghost"
                             handle=".drag-handle"
                             @end="onCatalogReorder"
-                            tag="div"
                         >
-                            <template #item="{ element, index }">
-                                <div class="catalog-item" :key="element.__dragKey">
-                                    <div class="catalog-controls-left">
-                                        <span class="drag-handle" aria-label="Reorder catalog">
-                                            <img src="/icons/move-24-000000.svg" alt="" aria-hidden="true" />
-                                        </span>
-                                        <!-- Visibility toggle indicator(s) -->
-                                        <span 
-                                            class="visibility-indicator" 
-                                            :class="{ 
-                                                'is-visible': !hasSystemExtra(element) && isCatalogVisible(element),
-                                                'visibility-hidden': hasSystemExtra(element)
-                                            }"
-                                            :title="getVisibilityTitle(element)"
-                                            @click="!hasSystemExtra(element) ? toggleCatalogVisibility(element) : null"
-                                        >
-                                            <img v-if="hasSearchExtra(element)" src="/icons/home-20-000000.svg" alt="" aria-hidden="true" class="icon-home" />
-                                            <img v-if="hasSearchExtra(element)" src="/icons/compass-20-000000.svg" alt="" aria-hidden="true" class="icon-discover" />
-                                            <img v-if="!hasSearchExtra(element) && !hasSystemExtra(element)" src="/icons/home-24-000000.svg" alt="" aria-hidden="true" />
-                                        </span>
-                                        <label :for="'catalog-' + element.type" class="catalog-type-label">
-                                            {{ element.type }}
-                                        </label>
-                                    </div>
-                                    <div class="catalog-controls-right">
-                                        <input
-                                            :id="'catalog-' + element.type"
-                                            type="text"
-                                            v-model="element.name"
-                                            placeholder="Catalog Name"
-                                        />
-                                        <button 
-                                            type="button" 
-                                            class="delete-button" 
-                                            :class="{ 'delete-hidden': hasSystemExtra(element) || hasSearchExtra(element) }"
-                                            @click="handleDeleteCatalog(element, index)"
-                                        >
-                                            <img src="/icons/trash-2-16-000000.svg" alt="Delete Catalog" />
-                                        </button>
-                                    </div>
+                            <div v-for="(element, index) in formModel.catalogs" class="catalog-item" :key="element.__dragKey">
+                                <div class="catalog-controls-left">
+                                    <span class="drag-handle" aria-label="Reorder catalog">
+                                        <img src="/icons/move-24-000000.svg" alt="" aria-hidden="true" />
+                                    </span>
+                                    <!-- Visibility toggle indicator(s) -->
+                                    <span 
+                                        class="visibility-indicator" 
+                                        :class="{ 
+                                            'is-visible': !hasSystemExtra(element) && isCatalogVisible(element),
+                                            'visibility-hidden': hasSystemExtra(element)
+                                        }"
+                                        :title="getVisibilityTitle(element)"
+                                        @click="!hasSystemExtra(element) ? toggleCatalogVisibility(element) : null"
+                                    >
+                                        <img v-if="hasSearchExtra(element)" src="/icons/home-20-000000.svg" alt="" aria-hidden="true" class="icon-home" />
+                                        <img v-if="hasSearchExtra(element)" src="/icons/compass-20-000000.svg" alt="" aria-hidden="true" class="icon-discover" />
+                                        <img v-if="!hasSearchExtra(element) && !hasSystemExtra(element)" src="/icons/home-24-000000.svg" alt="" aria-hidden="true" />
+                                    </span>
+                                    <label :for="'catalog-' + element.type" class="catalog-type-label">
+                                        {{ element.type }}
+                                    </label>
                                 </div>
-                            </template>
-                        </Draggable>
+                                <div class="catalog-controls-right">
+                                    <input
+                                        :id="'catalog-' + element.type"
+                                        type="text"
+                                        v-model="element.name"
+                                        placeholder="Catalog Name"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        class="delete-button" 
+                                        :class="{ 'delete-hidden': hasSystemExtra(element) || hasSearchExtra(element) }"
+                                        @click="handleDeleteCatalog(element, index)"
+                                    >
+                                        <img src="/icons/trash-2-16-000000.svg" alt="Delete Catalog" />
+                                    </button>
+                                </div>
+                            </div>
+                        </VueDraggable>
                     </div>
         
                     <div class="form-actions">
@@ -163,7 +165,7 @@
 
 <script setup>
 import { ref, watch, onMounted, nextTick, computed } from 'vue'
-import Draggable from 'vuedraggable'
+import { VueDraggable } from 'vue-draggable-plus'
 import { useDialog } from './DialogHost.vue'
 import Toast from './Toast.vue'
 import AddonFeatures from './AddonFeatures.vue'
@@ -561,24 +563,13 @@ function getGenreExtra(catalog) {
 
 
 function isCatalogVisible(catalog) {
-    // When search extra exists, it controls visibility
-    if (hasSearchExtra(catalog)) {
-        const searchExtra = getSearchExtra(catalog);
-        return searchExtra && searchExtra.isRequired !== true;
-    }
-    
-    // When genre exists, it controls visibility
-    if (hasGenreExtra(catalog)) {
-        const genreExtra = getGenreExtra(catalog);
-        return genreExtra && genreExtra.isRequired !== true;
-    }
-    
-    // For catalogs without extra (like Trakt), default to visible
     if (!Array.isArray(catalog.extra) || catalog.extra.length === 0) {
         return true;
     }
     
-    return false;
+    // For Home screen, if any extra is marked as isRequired: true, 
+    // it effectively hides the catalog row from the Home screen.
+    return !catalog.extra.some(e => e && e.isRequired === true);
 }
 
 function getVisibilityTitle(catalog) {
@@ -601,42 +592,15 @@ function toggleCatalogVisibility(catalog) {
         catalog.extra = [];
     }
     
-    // When search extra exists, it controls visibility
-    if (hasSearchExtra(catalog)) {
-        const searchExtra = getSearchExtra(catalog);
-        if (!searchExtra) return;
+    if (isCurrentlyVisible) {
+        // Hide: Set isRequired to true on the first suitable extra
+        // Prefer search or genre if they exist, otherwise take the first one
+        let targetExtra = getSearchExtra(catalog) || getGenreExtra(catalog) || catalog.extra[0];
         
-        if (isCurrentlyVisible) {
-            // Hide: add isRequired property
-            searchExtra.isRequired = true;
+        if (targetExtra) {
+            targetExtra.isRequired = true;
         } else {
-            // Show: remove isRequired property
-            delete searchExtra.isRequired;
-        }
-        
-        // Ensure genre extra has no isRequired property when search controls visibility
-        const genreExtra = getGenreExtra(catalog);
-        if (genreExtra && 'isRequired' in genreExtra) {
-            delete genreExtra.isRequired;
-        }
-    } 
-    // When genre exists, it controls visibility
-    else if (hasGenreExtra(catalog)) {
-        const genreExtra = getGenreExtra(catalog);
-        if (!genreExtra) return;
-        
-        if (isCurrentlyVisible) {
-            // Hide: add isRequired property
-            genreExtra.isRequired = true;
-        } else {
-            // Show: remove isRequired property
-            delete genreExtra.isRequired;
-        }
-    }
-    // For catalogs without extra (like Trakt), add a genre extra
-    else if (catalog.extra.length === 0) {
-        if (isCurrentlyVisible) {
-            // Hide: add genre extra with isRequired: true
+            // No extras at all, add a dummy required genre extra
             catalog.extra.push({
                 name: 'genre',
                 isRequired: true,
@@ -644,10 +608,36 @@ function toggleCatalogVisibility(catalog) {
                 optionsLimit: 1
             });
         }
-        // If not visible and no extra exists, do nothing (shouldn't happen)
+    } else {
+        // Show: Remove isRequired property from all extras
+        catalog.extra.forEach(extra => {
+            if (extra && typeof extra === 'object') {
+                delete extra.isRequired;
+            }
+        });
     }
     
     syncJsonModel();
+}
+
+function showAllCatalogs() {
+    if (!Array.isArray(formModel.value.catalogs)) return;
+    formModel.value.catalogs.forEach(catalog => {
+        if (hasSystemExtra(catalog)) return;
+        if (!isCatalogVisible(catalog)) {
+            toggleCatalogVisibility(catalog);
+        }
+    });
+}
+
+function hideAllCatalogs() {
+    if (!Array.isArray(formModel.value.catalogs)) return;
+    formModel.value.catalogs.forEach(catalog => {
+        if (hasSystemExtra(catalog)) return;
+        if (isCatalogVisible(catalog)) {
+            toggleCatalogVisibility(catalog);
+        }
+    });
 }
 
 async function handleCancel() {
@@ -1111,6 +1101,43 @@ textarea {
         background: rgba(0, 123, 255, 0.35);
         border-color: rgba(0, 123, 255, 0.8);
     }
+}
+
+.catalogs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.catalogs-header label {
+    margin-bottom: 0;
+}
+
+.catalogs-bulk-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.bulk-action-button {
+    padding: 4px 10px;
+    font-size: 12px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bulk-action-button:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.bulk-action-button:active {
+    transform: scale(0.95);
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .catalog-controls-left {

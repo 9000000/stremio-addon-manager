@@ -141,7 +141,7 @@ const spotlightSections = [
       },
       {
         title: 'Control what shows on Home screen',
-        copy: 'Show or hide individual catalog rows on the Stremio Home screen by toggling the Home icon, so only the stuff you care about is visible.',
+        copy: 'Show or hide individual catalog rows on the Stremio Home screen by toggling the Home icon. Use the new "Show All" or "Hide All" buttons to manage large lists instantly.',
         status: 'new'
       },
       {

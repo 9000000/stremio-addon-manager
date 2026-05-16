@@ -118,7 +118,7 @@ This project is part of an ongoing community effort:
 - **Major improvements and the first "Edit addon" work (renaming/removing catalogs inside an addon):** [redd-ravenn/stremio-addon-manager](https://github.com/redd-ravenn/stremio-addon-manager)
 - **This fork (the-nomadicat/stremio-addon-manager) adds:**
   - Catalog reordering within an addon (drag & drop)
-  - Toggle whether each catalog appears on the Stremio Home screen (including Cinemeta catalogs, without uninstalling Cinemeta)
+  - Toggle whether each catalog appears on the Stremio Home screen (including Cinemeta catalogs, without uninstalling Cinemeta), with new bulk "Show All" / "Hide All" controls.
   - Global catalog reordering and hide/show without removing addons
   - Multi-account saved logins (with rename / delete / wipe-all UI)
   - Backup / restore workflow
