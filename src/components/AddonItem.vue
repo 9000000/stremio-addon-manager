@@ -40,13 +40,13 @@
               <img src="/icons/trash-2-12-000000.svg">
             </button>
           </div>
-          <span class="drag-handle" aria-label="Reorder addon">
-            <img src="/icons/move-32-000000.svg" alt="" aria-hidden="true" />
-          </span>
         </div>
       </div>
     </div>
     <div class="item-right">
+      <span class="drag-handle" aria-label="Reorder addon">
+        <img src="/icons/move-32-000000.svg" alt="" aria-hidden="true" />
+      </span>
       <span class="priority-display">{{ priorityNumber }}</span>
       <input 
         type="number" 
@@ -239,9 +239,8 @@
 
 @media (max-width: 768px) {
   .sortable-list .item {
-    flex-direction: column; /* Stack vertically on mobile */
-    align-items: flex-start; /* Left align everything */
     padding: 10px;
+    /* Giữ nguyên flex-direction: row từ .item mặc định để phần số thứ tự luôn ở bên phải */
   }
 }
 
@@ -539,13 +538,14 @@ input:checked + .addon-toggle-slider .switch-icon {
   -webkit-user-select: none;
   display: flex;
   align-items: center;
-  padding: 8px;
-  margin-left: 12px;
+  justify-content: center;
+  padding: 6px;
+  margin: 0;
 }
 
 .drag-handle img {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   filter: brightness(0); /* Make icon black */
   pointer-events: none;
 }
@@ -560,9 +560,13 @@ input:checked + .addon-toggle-slider .switch-icon {
 
 @media (max-width: 768px) {
   .sortable-list .item {
-    flex-direction: column;
-    align-items: flex-start; /* Left align everything */
+    /* Keep flex-direction: row */
     padding: 10px;
+  }
+
+  .item-right {
+    padding-left: 10px; /* Tiết kiệm không gian trên mobile */
+    min-width: 60px;
   }
 
   .item .details {
@@ -577,10 +581,7 @@ input:checked + .addon-toggle-slider .switch-icon {
 
   .actions-wrapper {
     width: 100%;
-    justify-content: space-between; /* Push buttons left, drag handle right */
     margin-top: 10px;
-    flex-wrap: wrap; /* Allow wrapping of the whole row if needed */
-    row-gap: 10px;
   }
 
   .col {
@@ -597,17 +598,6 @@ input:checked + .addon-toggle-slider .switch-icon {
     min-width: 32px; /* Ensure buttons don't get too small */
     flex-shrink: 0; /* Don't let individual buttons shrink */
   }
-
-  .drag-handle {
-    margin-left: 8px; /* Reduce margin to save space */
-    padding: 6px; /* Reduce padding to save space */
-    flex-shrink: 0; /* Never shrink the drag handle */
-  }
-
-  .drag-handle img {
-    width: 32px; /* Keep large on mobile for easy touch */
-    height: 32px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -622,12 +612,12 @@ input:checked + .addon-toggle-slider .switch-icon {
   }
 
   .actions-wrapper {
-    justify-content: space-between; /* Keep buttons left, drag handle right */
+    margin-top: 6px;
   }
 
   .col {
-    gap: 3px; /* Minimal gap for very small screens */
-    flex-wrap: nowrap; /* Never wrap */
+    gap: 6px 4px; /* Minimal gap for very small screens */
+    flex-wrap: wrap; /* Allow buttons to wrap */
   }
 
   .button {
@@ -638,17 +628,6 @@ input:checked + .addon-toggle-slider .switch-icon {
   .button img {
     width: 16px; /* Slightly smaller icons on very small screens */
     height: 16px;
-  }
-
-  .drag-handle {
-    margin-left: 4px; /* Minimal margin */
-    padding: 4px;
-    min-width: 28px;
-  }
-
-  .drag-handle img {
-    width: 28px; /* Slightly smaller on very small screens but still usable */
-    height: 28px;
   }
 }
 </style>

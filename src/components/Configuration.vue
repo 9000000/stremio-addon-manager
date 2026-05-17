@@ -95,6 +95,9 @@
                         </button>
                     </div>
                     <div class="right-actions">
+                        <button type="button" class="button" :disabled="isLoadingAddons" @click="loadUserAddons" style="margin-right: 8px;">
+                            {{ isLoadingAddons ? 'Reloading...' : 'Reload Addons' }}
+                        </button>
                         <button type="button" class="button install" @click="installAddon">
                             Add Addon...
                         </button>
