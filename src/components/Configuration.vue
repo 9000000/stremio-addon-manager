@@ -45,8 +45,11 @@
             <fieldset id="form_step2">
                 <legend>Step 3: Edit/Re-Order Addons & Catalogs</legend>
                 
-                <!-- Find Catalog Button -->
+                <!-- Find Catalog Button & Update All -->
                 <div v-if="addons.length" class="find-catalog-section">
+                    <button type="button" class="button update-all" @click="updateAllAddons" :disabled="isUpdatingAny" style="margin-right: 8px;">
+                        {{ isUpdatingAll ? 'Updating All...' : 'Update All Addons' }}
+                    </button>
                     <button type="button" class="button find-catalog-button" @click="openSearchWidget">
                         Find Catalogs
                     </button>
@@ -73,8 +76,10 @@
                                 :totalAddons="addons.length"
                                 :isDeletable="!getNestedObjectProperty(element, 'flags.protected', false)"
                                 :isConfigurable="getNestedObjectProperty(element, 'manifest.behaviorHints.configurable', false)"
+                                :isUpdating="updatingAddons[element.transportUrl] === true"
                                 @delete-addon="removeAddon"
                                 @edit-addon="openEditAddon"
+                                @update-addon="updateAddonAt"
                                 @show-toast="handleToast"
                                 @change-priority="moveAddonToPosition" 
                                 @toggle-addon-visibility="toggleAddonVisibility"
@@ -191,6 +196,12 @@ let stremioAuthKey = ref('');
 let addons = ref([])
 let isLoadingAddons = ref(false)
 let hasLoadedAddons = ref(false)
+
+const updatingAddons = ref({})
+const isUpdatingAll = ref(false)
+const isUpdatingAny = computed(() => {
+    return Object.values(updatingAddons.value).some(v => v === true) || isUpdatingAll.value;
+})
 
 const authRef = ref(null)
 const dialog = useDialog()
@@ -1045,6 +1056,209 @@ function handleKeydown(event) {
     }
 }
 
+function mergeManifestCatalogs(oldManifest, newManifest) {
+    if (!oldManifest.catalogs || !newManifest.catalogs) return;
+    
+    const oldCatalogs = oldManifest.catalogs;
+    const newCatalogs = newManifest.catalogs;
+    const mergedCatalogs = [];
+    
+    // 1. Process catalogs that existed in the old manifest and still exist in the new manifest
+    oldCatalogs.forEach(oldCat => {
+        const matchingNewCat = newCatalogs.find(newCat => 
+            newCat.type === oldCat.type && 
+            (newCat.id === oldCat.id || newCat.name === oldCat.name)
+        );
+        
+        if (matchingNewCat) {
+            const mergedCat = { ...matchingNewCat };
+            
+            // Preserve custom name if user modified it
+            if (oldCat.name) {
+                mergedCat.name = oldCat.name;
+            }
+            
+            // Preserve visibility (isRequired = true on extra parameters)
+            if (oldCat.extra && mergedCat.extra) {
+                oldCat.extra.forEach(oldExtra => {
+                    if (oldExtra && oldExtra.isRequired === true) {
+                        const newExtra = mergedCat.extra.find(e => e && e.name === oldExtra.name);
+                        if (newExtra) {
+                            newExtra.isRequired = true;
+                        }
+                    }
+                });
+            }
+            
+            mergedCatalogs.push(mergedCat);
+        }
+    });
+    
+    // 2. Append any brand new catalogs that were not in the old manifest
+    newCatalogs.forEach(newCat => {
+        const alreadyAdded = mergedCatalogs.some(cat => 
+            cat.type === newCat.type && 
+            (cat.id === newCat.id || cat.name === newCat.name)
+        );
+        
+        if (!alreadyAdded) {
+            mergedCatalogs.push(newCat);
+        }
+    });
+    
+    newManifest.catalogs = mergedCatalogs;
+}
+
+async function fetchManifest(manifestURL) {
+    let fetchURL = manifestURL;
+    if (fetchURL.startsWith('stremio://')) {
+        fetchURL = fetchURL.replace('stremio://', 'https://');
+    }
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    
+    try {
+        const response = await fetch(fetchURL, {
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error(`Invalid response type: ${contentType || 'unknown'}`);
+        }
+        
+        const manifest = await response.json();
+        
+        if (!manifest || typeof manifest !== 'object') {
+            throw new Error('Manifest is not a valid object');
+        }
+        
+        if (!manifest.id || !manifest.name || !manifest.version) {
+            throw new Error('Manifest is missing required fields (id, name, version)');
+        }
+        
+        return manifest;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            throw new Error('Request timed out after 15 seconds');
+        }
+        throw error;
+    }
+}
+
+async function updateAddonAt(idx) {
+    const addon = addons.value[idx];
+    if (!addon) return;
+    
+    const url = addon.transportUrl;
+    updatingAddons.value[url] = true;
+    
+    try {
+        const manifest = await fetchManifest(url);
+        
+        // Preserve catalog order, custom name and visibility
+        mergeManifestCatalogs(addon.manifest, manifest);
+        
+        const oldManifestStr = JSON.stringify(addon.manifest);
+        const newManifestStr = JSON.stringify(manifest);
+        
+        if (oldManifestStr !== newManifestStr) {
+            addon.manifest = manifest;
+            checkIfModified();
+            
+            toastRef.value?.show({
+                message: `Updated "${manifest.name}" to version ${manifest.version}`,
+                duration: 4000
+            });
+        } else {
+            toastRef.value?.show({
+                message: `"${manifest.name}" is already up to date`,
+                duration: 3000
+            });
+        }
+    } catch (error) {
+        console.error('Failed to update addon:', error);
+        toastRef.value?.show({
+            message: `Failed to update "${addon.manifest.name}": ${error.message}`,
+            duration: 5000
+        });
+    } finally {
+        delete updatingAddons.value[url];
+    }
+}
+
+async function updateAllAddons() {
+    if (addons.value.length === 0) return;
+    
+    isUpdatingAll.value = true;
+    
+    let updatedCount = 0;
+    let upToDateCount = 0;
+    let failedCount = 0;
+    
+    // Process all updates concurrently
+    const updatePromises = addons.value.map(async (addon) => {
+        const url = addon.transportUrl;
+        updatingAddons.value[url] = true;
+        
+        try {
+            const manifest = await fetchManifest(url);
+            
+            // Preserve catalog configurations
+            mergeManifestCatalogs(addon.manifest, manifest);
+            
+            const oldManifestStr = JSON.stringify(addon.manifest);
+            const newManifestStr = JSON.stringify(manifest);
+            
+            if (oldManifestStr !== newManifestStr) {
+                addon.manifest = manifest;
+                updatedCount++;
+            } else {
+                upToDateCount++;
+            }
+        } catch (error) {
+            console.error(`Failed to update addon at ${url}:`, error);
+            failedCount++;
+        } finally {
+            delete updatingAddons.value[url];
+        }
+    });
+    
+    await Promise.all(updatePromises);
+    
+    if (updatedCount > 0) {
+        checkIfModified();
+    }
+    
+    isUpdatingAll.value = false;
+    
+    let summaryMessage = '';
+    if (updatedCount > 0) {
+        summaryMessage += `Successfully updated ${updatedCount} addon${updatedCount !== 1 ? 's' : ''}. `;
+    }
+    if (upToDateCount > 0) {
+        summaryMessage += `${upToDateCount} addon${upToDateCount !== 1 ? 's are' : ' is'} already up-to-date. `;
+    }
+    if (failedCount > 0) {
+        summaryMessage += `Failed to update ${failedCount} addon${failedCount !== 1 ? 's' : ''}.`;
+    }
+    
+    toastRef.value?.show({
+        message: summaryMessage.trim(),
+        duration: 6000
+    });
+}
+
 onMounted(() => {
     window.addEventListener('scroll', handleScroll)
     window.addEventListener('keydown', handleKeydown)
@@ -1587,5 +1801,21 @@ button:disabled {
         font-size: 13px;
         min-width: 45px;
     }
+}
+.button.update-all {
+    background-color: #6f42c1;
+}
+
+.button.update-all:hover {
+    background-color: #59359a;
+}
+
+.button.update-all:active {
+    background-color: #492a83;
+}
+
+.button.update-all:disabled {
+    background-color: #5c4b75;
+    opacity: 0.6;
 }
 </style>

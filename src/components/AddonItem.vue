@@ -26,6 +26,11 @@
               @click="openEditManifestModal" @mousedown.stop @touchstart.stop>
               <img src="/icons/edit-12-000000.svg">
             </button>
+            <button class="button icon-only update-addon" title="Update addon manifest" 
+              :disabled="isUpdating"
+              @click="updateAddon" @mousedown.stop @touchstart.stop>
+              <img :class="{ 'spin': isUpdating }" :src="isUpdating ? '/icons/loader-16-ffffff.svg' : '/icons/refresh-12-000000.svg'">
+            </button>
             <div class="addon-toggle-container">
               <label class="addon-toggle-switch" :title="isAddonVisible ? 'Visible on Home screen (Click to hide)' : 'Hidden from Home screen (Click to show)'">
                 <input type="checkbox" :checked="isAddonVisible" @change="toggleVisibility">
@@ -107,10 +112,15 @@
     totalAddons: {
       type: Number,
       required: true
+    },
+    isUpdating: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   })
   
-  const emits = defineEmits(['delete-addon', 'edit-addon', 'show-toast', 'change-priority', 'toggle-addon-visibility'])
+  const emits = defineEmits(['delete-addon', 'edit-addon', 'show-toast', 'change-priority', 'toggle-addon-visibility', 'update-addon'])
   
   const defaultLogo = '/icons/box-48-ffffff.svg'
 
@@ -218,6 +228,10 @@
   
   function openEditManifestModal() {
     emits('edit-addon', props.idx)
+  }
+
+  function updateAddon() {
+    emits('update-addon', props.idx)
   }
 </script>
 
@@ -416,7 +430,8 @@
 
 .visit-url img,
 .copy-url img,
-.edit-addon img {
+.edit-addon img,
+.update-addon img {
   width: 20px;
   height: 20px;
   filter: brightness(0); /* Make icons black */
@@ -523,7 +538,8 @@ input:checked + .addon-toggle-slider .switch-icon {
 
 .dark .visit-url img,
 .dark .copy-url img,
-.dark .edit-addon img {
+.dark .edit-addon img,
+.dark .update-addon img {
   filter: brightness(0); /* Keep icons black even in dark mode */
 }
 
@@ -629,5 +645,15 @@ input:checked + .addon-toggle-slider .switch-icon {
     width: 16px; /* Slightly smaller icons on very small screens */
     height: 16px;
   }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+  display: inline-block;
 }
 </style>
