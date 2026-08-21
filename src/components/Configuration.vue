@@ -90,23 +90,19 @@
             <fieldset id="form_step3">
                 <legend>Step 4: Sync Addons</legend>
                 <div v-if="addons.length" ref="controlsRef" class="action-row sticky-controls" :class="{ 'controls-fixed': controlsFixed }">
-                    <div class="left-actions">
-                        <button type="button" class="button primary large icon" :class="{ 'pulse': needsSync }" :disabled="!needsSync" @click="syncUserAddons">
-                            Sync
-                            <img src="/icons/loader-16-ffffff.svg" alt="icon">
-                        </button>
-                    </div>
-                    <div class="right-actions">
-                        <button type="button" class="button update-all" :disabled="isUpdatingAny" @click="updateAllAddons">
-                            {{ isUpdatingAll ? 'Updating...' : 'Update' }}
-                        </button>
-                        <button type="button" class="button" :disabled="isLoadingAddons" @click="loadUserAddons">
-                            {{ isLoadingAddons ? 'Reloading...' : 'Reload' }}
-                        </button>
-                        <button type="button" class="button install" @click="installAddon">
-                            Add
-                        </button>
-                    </div>
+                    <button type="button" class="button primary large icon" :class="{ 'pulse': needsSync }" :disabled="!needsSync" @click="syncUserAddons">
+                        Sync
+                        <img src="/icons/loader-16-ffffff.svg" alt="icon">
+                    </button>
+                    <button type="button" class="button update-all" :disabled="isUpdatingAny" @click="updateAllAddons">
+                        {{ isUpdatingAll ? 'Updating...' : 'Update' }}
+                    </button>
+                    <button type="button" class="button" :disabled="isLoadingAddons" @click="loadUserAddons">
+                        {{ isLoadingAddons ? 'Reloading...' : 'Reload' }}
+                    </button>
+                    <button type="button" class="button install" @click="installAddon">
+                        Add
+                    </button>
                 </div>
                 <p v-else-if="stremioAuthKey" class="empty-state">Load addons or restore a configuration above to enable syncing.</p>
             </fieldset>
@@ -1332,10 +1328,15 @@ onUnmounted(() => {
 
 .sticky-controls {
     background: linear-gradient(to top, #1a1a1a 0%, #1a1a1a 85%, rgba(26, 26, 26, 0.95) 100%);
-    padding: 20px 25px;
+    padding: 16px 20px;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
     transition: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
 }
 
 .sticky-controls.controls-fixed {
@@ -1475,9 +1476,13 @@ button:disabled {
 }
 
 .button.primary.large {
-    padding: 13px 26px;
-    font-size: 17px;
+    padding: 10px 22px;
+    font-size: 16px;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
 }
 
 @keyframes pulse {
@@ -1714,9 +1719,23 @@ button:disabled {
     }
     
     .sticky-controls {
-        padding: 15px 25px;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 12px 16px;
         width: 100%; /* Use full width on mobile */
         max-width: 100%;
+    }
+    
+    .sticky-controls button {
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 70px;
+        font-size: 14px;
+        padding: 10px 12px;
+        margin: 0;
+        box-sizing: border-box;
     }
     
     .left-actions,
