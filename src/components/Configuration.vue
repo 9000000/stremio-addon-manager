@@ -1830,7 +1830,6 @@ button:disabled {
         font-size: 14px;
         padding: 10px 14px;
     }
-}
     
     .search-widget {
         min-width: 280px;
