@@ -3,12 +3,12 @@
     <header>
       <DarkModeToggle />
       <Header addonName="Stremio Addon Manager"
-        addonSummary="Effortlessly manage the order of your Stremio addons without re-installing."
-        addonTagline="Including the default Cinemeta catalogs." addonLogo="logo.png" />
+        addonLogo="logo.png" />
     </header>
     <main>
-      <Summary />
+      <Summary type="workflow" />
       <Configuration />
+      <Summary type="spotlights" />
       <ThankYou />
       <FAQ />
     </main>

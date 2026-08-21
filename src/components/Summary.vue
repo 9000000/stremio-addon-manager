@@ -75,7 +75,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+
+const props = defineProps({
+  type: {
+    type: String,
+    default: 'all' // 'all' | 'workflow' | 'spotlights'
+  }
+})
 
 const spotlightSections = [
   {
@@ -260,7 +267,15 @@ function persistPanels(panels) {
   }
 }
 
-const accordionPanels = panelDefinitions
+const accordionPanels = computed(() => {
+  if (props.type === 'workflow') {
+    return panelDefinitions.filter(p => p.id === 'workflow')
+  }
+  if (props.type === 'spotlights') {
+    return panelDefinitions.filter(p => p.id === 'spotlights')
+  }
+  return panelDefinitions
+})
 
 const openPanels = ref(loadStoredPanels())
 
@@ -284,10 +299,9 @@ function togglePanel(id) {
 <style scoped>
 
 .summary {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  margin-bottom: 2.25rem;
+  display: block;
+  width: 100%;
+  margin: 1rem 0 1.5rem;
 }
 
 .summary-panel {
@@ -299,6 +313,7 @@ function togglePanel(id) {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  margin: 0;
 }
 
 .summary-panel__header {
@@ -325,6 +340,7 @@ function togglePanel(id) {
 
 .summary-accordion {
   width: 100%;
+  margin: 0 !important;
   display: block;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -334,7 +350,7 @@ function togglePanel(id) {
 }
 
 .summary-accordion + .summary-accordion {
-  margin-top: 0.35rem;
+  margin-top: 1rem !important;
 }
 
 .summary-accordion__toggle {
@@ -370,7 +386,7 @@ function togglePanel(id) {
 
 .summary-accordion__title {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   text-align: left;
 }

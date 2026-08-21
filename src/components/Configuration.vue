@@ -45,11 +45,8 @@
             <fieldset id="form_step2">
                 <legend>Step 3: Edit/Re-Order Addons & Catalogs</legend>
                 
-                <!-- Find Catalog Button & Update All -->
+                <!-- Find Catalog Button -->
                 <div v-if="addons.length" class="find-catalog-section">
-                    <button type="button" class="button update-all" @click="updateAllAddons" :disabled="isUpdatingAny" style="margin-right: 8px;">
-                        {{ isUpdatingAll ? 'Updating All...' : 'Update All Addons' }}
-                    </button>
                     <button type="button" class="button find-catalog-button" @click="openSearchWidget">
                         Find Catalogs
                     </button>
@@ -95,16 +92,19 @@
                 <div v-if="addons.length" ref="controlsRef" class="action-row sticky-controls" :class="{ 'controls-fixed': controlsFixed }">
                     <div class="left-actions">
                         <button type="button" class="button primary large icon" :class="{ 'pulse': needsSync }" :disabled="!needsSync" @click="syncUserAddons">
-                            Sync to Stremio
+                            Sync
                             <img src="/icons/loader-16-ffffff.svg" alt="icon">
                         </button>
                     </div>
                     <div class="right-actions">
-                        <button type="button" class="button" :disabled="isLoadingAddons" @click="loadUserAddons" style="margin-right: 8px;">
-                            {{ isLoadingAddons ? 'Reloading...' : 'Reload Addons' }}
+                        <button type="button" class="button update-all" :disabled="isUpdatingAny" @click="updateAllAddons">
+                            {{ isUpdatingAll ? 'Updating...' : 'Update' }}
+                        </button>
+                        <button type="button" class="button" :disabled="isLoadingAddons" @click="loadUserAddons">
+                            {{ isLoadingAddons ? 'Reloading...' : 'Reload' }}
                         </button>
                         <button type="button" class="button install" @click="installAddon">
-                            Add Addon...
+                            Add
                         </button>
                     </div>
                 </div>
@@ -1276,6 +1276,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+#configure h2 {
+    font-size: 1.70rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
 .addon-list {
     padding: 25px;
     border-radius: 7px;
