@@ -1328,7 +1328,7 @@ onUnmounted(() => {
 
 .sticky-controls {
     background: linear-gradient(to top, #1a1a1a 0%, #1a1a1a 85%, rgba(26, 26, 26, 0.95) 100%);
-    padding: 16px 20px;
+    padding: 14px 20px;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
     transition: none;
@@ -1336,7 +1336,12 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
     gap: 0.65rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+}
+
+.sticky-controls button,
+.sticky-controls .button {
+    white-space: nowrap;
 }
 
 .sticky-controls.controls-fixed {
@@ -1709,33 +1714,50 @@ button:disabled {
 /* Mobile responsive styles for buttons and action rows */
 @media (max-width: 768px) {
     #form_step3 {
-        min-height: 152px;
+        min-height: 80px;
     }
     
-    .action-row {
+    .action-row:not(.sticky-controls) {
         flex-direction: column;
         gap: 0.75rem;
         align-items: stretch;
     }
     
     .sticky-controls {
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 12px 16px;
-        width: 100%; /* Use full width on mobile */
-        max-width: 100%;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 6px !important;
+        padding: 10px 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
     
-    .sticky-controls button {
-        width: auto;
-        flex: 1 1 auto;
-        min-width: 70px;
-        font-size: 14px;
-        padding: 10px 12px;
-        margin: 0;
-        box-sizing: border-box;
+    .sticky-controls button,
+    .sticky-controls .button {
+        width: auto !important;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        font-size: 13.5px !important;
+        padding: 9px 6px !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: nowrap !important;
+    }
+    
+    .sticky-controls .button.primary.large {
+        padding: 9px 6px !important;
+        font-size: 13.5px !important;
+        gap: 3px !important;
+    }
+    
+    .sticky-controls .button.primary.large img {
+        width: 13px !important;
+        height: 13px !important;
     }
     
     .left-actions,
@@ -1755,31 +1777,50 @@ button:disabled {
         margin: 0;
         box-sizing: border-box;
     }
-    
-    .button.primary.large {
-        padding: 14px 16px;
-        font-size: 16px;
-    }
 }
 
 @media (max-width: 600px) {
     .sticky-controls.controls-fixed {
-        width: calc(100% - 66px) !important;
+        width: calc(100% - 24px) !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
     }
 }
 
 @media (max-width: 480px) {
     #form_step3 {
-        min-height: 137px;
+        min-height: 70px;
     }
     
     .sticky-controls {
-        padding: 12px 25px;
-        width: 100%;
-        max-width: 100%;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: center !important;
+        padding: 8px 8px !important;
+        gap: 4px !important;
+        width: 100% !important;
     }
     
-    button {
+    .sticky-controls button,
+    .sticky-controls .button {
+        font-size: 12px !important;
+        padding: 8px 2px !important;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+    
+    .sticky-controls .button.primary.large {
+        padding: 8px 2px !important;
+        font-size: 12px !important;
+        gap: 2px !important;
+    }
+    
+    .sticky-controls .button.primary.large img {
+        width: 11px !important;
+        height: 11px !important;
+    }
+    
+    button:not(.sticky-controls button) {
         font-size: 14px;
         padding: 10px 14px;
     }
@@ -1789,11 +1830,7 @@ button:disabled {
         font-size: 14px;
         padding: 10px 14px;
     }
-    
-    .button.primary.large {
-        padding: 12px 14px;
-        font-size: 15px;
-    }
+}
     
     .search-widget {
         min-width: 280px;
